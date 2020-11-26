@@ -1,0 +1,793 @@
+Index: C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/functions/PluginFunctions.java
+===================================================================
+--- C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/functions/PluginFunctions.java	(revision 0)
++++ C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/functions/PluginFunctions.java	(revision 0)
+@@ -0,0 +1,412 @@
++/*
++ *  This software copyright by various authors including the RPTools.net
++ *  development team, and licensed under the LGPL Version 3 or, at your
++ *  option, any later version.
++ *
++ *  Portions of this software were originally covered under the Apache
++ *  Software License, Version 1.1 or Version 2.0.
++ *
++ *  See the file LICENSE elsewhere in this distribution for license details.
++ */
++
++package net.rptools.maptool.client.functions;
++
++import java.util.List;
++
++import net.rptools.maptool.client.AppUtil;
++import net.rptools.maptool.client.MapTool;
++import net.rptools.maptool.language.I18N;
++import net.rptools.parser.Parser;
++import net.rptools.parser.ParserException;
++import net.rptools.parser.function.AbstractFunction;
++
++import java.io.File;
++import java.net.URL;
++import java.net.URLClassLoader;
++import java.lang.reflect.Method;
++
++import org.apache.commons.io.FileUtils;
++
++public class PluginFunctions extends AbstractFunction {
++	private static final PluginFunctions instance = new PluginFunctions();
++
++	private PluginFunctions() {
++		super(0, 4, "pluginExecute", "pluginExecuteWithWarning", "pluginThread", "pluginThreadWithWarning", "pluginEnable", "pluginDisable", "pluginPromote", "pluginDemote", "pluginsAvailable", "pluginsActive", "pluginsUpdate");
++	}
++
++	public static PluginFunctions getInstance() {
++		return instance;
++	}
++
++	@Override
++	public Object childEvaluate(Parser parser, String functionName,
++			List<Object> args) throws ParserException{
++	
++		try
++		{
++			if (functionName.equals("pluginExecute")) {
++				return pluginExecute(parser, args);
++			}
++			else if (functionName.equals("pluginExecuteWithWarning")) {
++				return pluginExecuteWithWarning(parser, args);
++			}
++			else if (functionName.equals("pluginThread")) {
++				return pluginThread(parser, args);
++			}
++			else if (functionName.equals("pluginThreadWithWarning")) {
++				return pluginThreadWithWarning(parser, args);
++			}
++			else if (functionName.equals("pluginEnable")) {
++					return pluginEnable(parser, args);
++			}
++			else if (functionName.equals("pluginDisable")) {
++					return pluginDisable(parser, args);
++			}
++			else if (functionName.equals("pluginPromote")) {
++					return pluginPromote(parser, args);
++			}
++			else if (functionName.equals("pluginDemote")) {
++					return pluginDemote(parser, args);
++			}
++			else if (functionName.equals("pluginsAvailable")) {
++					return pluginsAvailable(parser, args);
++			}
++			else if (functionName.equals("pluginsActive")) {
++				return pluginsActive(parser, args);
++			}
++			else if (functionName.equals("pluginsUpdate")) {
++				return pluginsUpdate(parser, args);
++			} else {
++				throw new ParserException(I18N.getText("macro.function.general.unknownFunction", functionName));
++			}
++		}
++		catch(Exception e)
++		{
++			 return "";
++		}
++	}
++
++	public static Object pluginExecute(Parser parser, List<Object> args) throws ParserException, InterruptedException {
++		if(args.size()>3)
++		{
++			// Too Many Parameters
++			return "Too Many Parameters To 'pluginExecute' Function (Combine Parameters)";
++		}
++		else if(args.size()<2)
++		{
++			// Too Few Parameters
++			return "Too Few Parameters To 'pluginExecute' Function";
++		}
++		else
++		{
++			pluginExecuteHandler process = new pluginExecuteHandler();
++			Thread processThread = new Thread(process);
++			process.pluginFile = (String)args.get(0);
++			process.pluginFunction = (String)args.get(1);
++			process.pluginParams = (String)args.get(2);
++			process.pluginWarning = (boolean)false;
++			process.handleFeedBack = (boolean)false;
++			processThread.start();
++			while(processThread.isAlive())
++			{
++				try{ Thread.sleep(1000); }catch(Exception e){}
++			}
++			return process.feedBack;
++		}
++	}
++
++	public static Object pluginExecuteWithWarning(Parser parser, List<Object> args) throws ParserException, InterruptedException  {
++		if(args.size()>3)
++		{
++			// Too Many Parameters
++			return "Too Many Parameters To 'pluginExecuteWithWarning' Function (Combine Parameters)";
++		}
++		else if(args.size()<2)
++		{
++			// Too Few Parameters
++			return "Too Few Parameters To 'pluginExecuteWithWarning' Function";
++		}
++		else
++		{
++			pluginExecuteHandler process = new pluginExecuteHandler();
++			Thread processThread = new Thread(process);
++			process.pluginFile = (String)args.get(0);
++			process.pluginFunction = (String)args.get(1);
++			process.pluginParams = (String)args.get(2);
++			process.pluginWarning = (boolean)true;
++			process.handleFeedBack = (boolean)false;
++			processThread.start();
++			while(processThread.isAlive())
++			{
++				try{ Thread.sleep(1000); }catch(Exception e){}
++			}
++			return process.feedBack;
++		}
++	}
++
++	public static Object pluginThread(Parser parser, List<Object> args) throws ParserException, InterruptedException  {
++		if(args.size()>3)
++		{
++			// Too Many Parameters
++			return "Too Many Parameters To 'pluginThread' Function (Combine Parameters)";
++		}
++		else if(args.size()<2)
++		{
++			// Too Few Parameters
++			return "Too Few Parameters To 'pluginThread' Function";
++		}
++		else
++		{
++			pluginExecuteHandler process = new pluginExecuteHandler();
++			Thread processThread = new Thread(process);
++			process.pluginFile = (String)args.get(0);
++			process.pluginFunction = (String)args.get(1);
++			process.pluginParams = (String)args.get(2);
++			process.pluginWarning = (boolean)false;
++			process.handleFeedBack = (boolean)true;
++			processThread.start();
++			return "";
++		}
++	}
++
++	public static Object pluginThreadWithWarning(Parser parser, List<Object> args) throws ParserException, InterruptedException  {
++		if(args.size()>3)
++		{
++			// Too Many Parameters
++			return "Too Many Parameters To 'pluginThreadWithWarning' Function (Combine Parameters)";
++		}
++		else if(args.size()<2)
++		{
++			// Too Few Parameters
++			return "Too Few Parameters To 'pluginThreadWithWarning' Function";
++		}
++		else
++		{
++			pluginExecuteHandler process = new pluginExecuteHandler();
++			Thread processThread = new Thread(process);
++			process.pluginFile = (String)args.get(0);
++			process.pluginFunction = (String)args.get(1);
++			process.pluginParams = (String)args.get(2);
++			process.pluginWarning = (boolean)true;
++			process.handleFeedBack = (boolean)true;
++			processThread.start();
++			return "";
++		}
++	}
++	
++	/**
++	 * Execute method PluginFunction in class PluginFile in the JAR file PluginFile.jar using PluginParams as the parameter
++	 * @param pluginFile determines the JAR file (by appending JAR) and class of the method to be invoked.
++	 * @param pluginFunction determines the method to be invoked.
++	 * @param pluginParams determines the parameter to be send to the invoke (for multiple parameters wrap them into a single JSON string).
++	 * @param pluginWarning determines if an warning is displayed about plugins calls which are not installed.
++	 * @return Result of the invoke.
++	 * @throws ParserException if an error occurs.
++	 */
++	private static class pluginExecuteHandler implements Runnable
++	{
++		public String pluginFile;
++		public String pluginFunction;
++		public String pluginParams;
++		public boolean pluginWarning;
++		public boolean handleFeedBack;
++		public String feedBack;
++		
++		public void run()
++		{
++			// Determine the current directory so that we can generate an absolute
++			// directory path to the relative libs sub-directory
++			String classDir = new File("").getAbsolutePath();
++			
++			try
++			{
++				// Determine the URL of the desired Class or JAR file
++				URL classURL;
++				if(pluginFile.indexOf(".jar")<0)
++				{
++					// Determine the URL of the desired class file
++					classURL = new URL("file:///"+classDir+"/plugins/");
++				}
++				else
++				{
++					// Determine the URL of the desired JAR file
++					classURL = new URL("file:///"+classDir+"/plugins/"+pluginFile);
++					pluginFile = pluginFile.replace(".jar","");
++				}
++				// Load the contents of the JAR file
++				URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { classURL });   
++				// Obtain a reference to the class embedded in the JAR file
++				Class loadedClass = classLoader.loadClass(pluginFile);
++				// Obtain a reference to the desired method of the class in the JAR file
++				Class paramTypes[] = new Class[] { String.class , String.class, Boolean.class }; 
++				Method providedMethod = loadedClass.getDeclaredMethod(pluginFunction, paramTypes);
++				// Invoke the method
++				Object output = providedMethod.invoke(null, pluginParams, AppUtil.getAppHome("").toString(), MapTool.getPlayer().isGM());
++				System.out.println("Invoked '"+pluginFunction+"' in plugin '"+pluginFile+"' (Located in = '"+ classURL.toString()+"', Config='"+AppUtil.getAppHome("").toString()+"')");
++				Thread.sleep(100);
++				if(handleFeedBack==true){MapTool.addGlobalMessage((String)output);}else{feedBack = (String)output;}
++			}
++			catch(InterruptedException x)
++			{
++				// Interruption
++				feedBack = "";
++			}
++			catch(Exception e)
++			{
++				// Catch exceptions in trying to load the class
++				if(pluginWarning==true)
++				{
++					String output = "(Plugin '"+pluginFile+"' not installed. '"+pluginFunction+"' not executed)";
++					if(handleFeedBack==true){MapTool.addGlobalMessage((String)output);}else{feedBack = (String)output;}
++				}
++				else
++				{
++					feedBack = "";
++				}
++			}
++			catch(Error e)
++			{
++				// Catch errors in trying to load the class (typically because Java 7 was not supported)
++				if(pluginWarning==true)
++				{
++					String output = "(Plugin '"+pluginFile+"' not installed. '"+pluginFunction+"' not executed)";
++					if(handleFeedBack==true){MapTool.addGlobalMessage((String)output);}else{feedBack = (String)output;}
++				}
++				else
++				{
++					feedBack = "";
++				}
++			}
++		}
++	}
++	
++	private static Object pluginEnable(Parser parser, List<Object> args) throws ParserException
++	{
++		try
++		{
++			if(args.get(0).toString().toUpperCase().equals("ALL"))
++			{
++				MapTool.pluginsList = MapTool.pluginsAvailable.replace("*", "");
++			}
++			else if(MapTool.pluginsList.equals(""))
++			{
++				MapTool.pluginsList = args.get(0).toString();
++			}
++			else
++			{
++				MapTool.pluginsList = MapTool.pluginsList + ","+args.get(0).toString();
++			}
++			try
++			{
++				if(MapTool.pluginsList.substring(0,1).equals(",")){MapTool.pluginsList=MapTool.pluginsList.substring(1);}
++				if(MapTool.pluginsList.substring(MapTool.pluginsList.length()-1,MapTool.pluginsList.length()).equals(",")){MapTool.pluginsList=MapTool.pluginsList.substring(0,MapTool.pluginsList.length()-1);}
++			}
++			catch(Exception x)
++			{
++			}
++			FileUtils.writeStringToFile(new File(AppUtil.getAppHome("config").toString()+"/Plugins.List"),MapTool.pluginsList);
++			return "<font color=red>Warning!</font> MapTool has <font color=red>active</font> plugins - "+MapTool.pluginsList+".";
++		}
++		catch(Exception e)
++		{
++			return "Could not save plugin '"+args.get(0)+"' in enabled state. Plugin will be enabled for this session only.";
++		}
++	}
++
++	private static Object pluginDisable(Parser parser, List<Object> args) throws ParserException
++	{
++		try
++		{
++			MapTool.pluginsList = MapTool.pluginsList.replace(args.get(0).toString()+",",""); 
++			MapTool.pluginsList = MapTool.pluginsList.replace(args.get(0).toString(),"");
++			try
++			{
++				if(MapTool.pluginsList.substring(0,1).equals(",")){MapTool.pluginsList=MapTool.pluginsList.substring(1);}
++				if(MapTool.pluginsList.substring(MapTool.pluginsList.length()-1,MapTool.pluginsList.length()).equals(",")){MapTool.pluginsList=MapTool.pluginsList.substring(0,MapTool.pluginsList.length()-1);}
++				if(args.get(0).toString().toUpperCase().equals("ALL")){MapTool.pluginsList="";}
++			}
++			catch(Exception x)
++			{
++			}
++			FileUtils.writeStringToFile(new File(AppUtil.getAppHome("config").toString()+"/Plugins.List"),MapTool.pluginsList);
++			if(MapTool.pluginsList.equals(""))
++			{
++				return "<font color=red>Note:</font> MapTool has no <font color=red>active</font> plugins.";
++			}
++			else
++			{
++				return "<font color=red>Warning!</font> MapTool has <font color=red>active</font> plugins - "+MapTool.pluginsList+".";
++			}
++		}
++		catch(Exception e)
++		{
++			return "Could not save plugin '"+args.get(0)+"' in disabled state. Plugin will be disabled for this session only. "+e.getMessage();
++		}
++	}
++
++	private static Object pluginPromote(Parser parser, List<Object> args) throws ParserException
++	{
++		try
++		{
++			MapTool.pluginsList = MapTool.pluginsList.replace(args.get(0).toString()+",",""); 
++			MapTool.pluginsList = MapTool.pluginsList.replace(args.get(0).toString(),"");
++			if(MapTool.pluginsList.substring(0,1).equals(",")){MapTool.pluginsList=MapTool.pluginsList.substring(1);}
++			if(MapTool.pluginsList.substring(MapTool.pluginsList.length()-1,MapTool.pluginsList.length()).equals(",")){MapTool.pluginsList=MapTool.pluginsList.substring(0,MapTool.pluginsList.length()-1);}
++			MapTool.pluginsList = args.get(0)+","+MapTool.pluginsList;
++			FileUtils.writeStringToFile(new File(AppUtil.getAppHome("config").toString()+"/Plugins.List"),MapTool.pluginsList);
++			return "<font color=red>Warning!</font> MapTool has <font color=red>active</font> plugins - "+MapTool.pluginsList+".";
++		}
++		catch(Exception e)
++		{
++			return "Could not save plugin '"+args.get(0)+"' in promoted state. Plugin will be promoted for this session only.";
++		}
++	}
++
++	private static Object pluginDemote(Parser parser, List<Object> args) throws ParserException
++	{
++		try
++		{
++			MapTool.pluginsList = MapTool.pluginsList.replace(args.get(0).toString()+",",""); 
++			MapTool.pluginsList = MapTool.pluginsList.replace(args.get(0).toString(),"");
++			MapTool.pluginsList = MapTool.pluginsList+","+args.get(0);
++			if(MapTool.pluginsList.substring(0,1).equals(",")){MapTool.pluginsList=MapTool.pluginsList.substring(1);}
++			if(MapTool.pluginsList.substring(MapTool.pluginsList.length()-1,MapTool.pluginsList.length()).equals(",")){MapTool.pluginsList=MapTool.pluginsList.substring(0,MapTool.pluginsList.length()-1);}
++			FileUtils.writeStringToFile(new File(AppUtil.getAppHome("config").toString()+"/Plugins.List"),MapTool.pluginsList);
++			return "<font color=red>Warning!</font> MapTool has <font color=red>active</font> plugins - "+MapTool.pluginsList+".";
++		}
++		catch(Exception e)
++		{
++			return "Could not save plugin '"+args.get(0)+"' in promoted state. Plugin will be promoted for this session only.";
++		}
++	}
++
++	private static Object pluginsAvailable(Parser parser, List<Object> args) throws ParserException
++	{
++		if(MapTool.pluginsAvailable.equals(""))
++		{
++			return "None";
++		}
++		else
++		{
++			return MapTool.pluginsAvailable;
++		}
++	}
++
++	private static Object pluginsActive(Parser parser, List<Object> args) throws ParserException
++	{
++		if(MapTool.pluginsList.equals(""))
++		{
++			return "None";
++		}
++		else
++		{
++			return MapTool.pluginsList;
++		}
++	}
++
++	private static Object pluginsUpdate(Parser parser, List<Object> args) throws ParserException
++	{
++		MapTool.processPlugins();
++		return "Plugin List Updated";
++	}
++}
+\ No newline at end of file
+Index: C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/MapTool.java
+===================================================================
+--- C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/MapTool.java	(revision 5987)
++++ C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/MapTool.java	(working copy)
+@@ -25,6 +25,7 @@
+ import java.awt.image.BufferedImage;
+ import java.io.ByteArrayInputStream;
+ import java.io.File;
++import java.io.FileOutputStream;
+ import java.io.IOException;
+ import java.lang.reflect.InvocationTargetException;
+ import java.lang.reflect.Method;
+@@ -181,6 +182,9 @@
+ 	private static EventDispatcher eventDispatcher;
+ 	private static MapToolLineParser parser = new MapToolLineParser();
+ 	private static String lastWhisperer;
++	
++	public static String pluginsAvailable;
++	public static String pluginsList;
+ 
+ 	/**
+ 	 * This method looks up the message key in the properties file and returns
+@@ -636,7 +640,7 @@
+ 		ToolTipManager.sharedInstance().setInitialDelay(AppPreferences.getToolTipInitialDelay());
+ 		ToolTipManager.sharedInstance().setDismissDelay(AppPreferences.getToolTipDismissDelay());
+ 		ChatAutoSave.changeTimeout(AppPreferences.getChatAutosaveTime());
+-
++				
+ 		// TODO: make this more formal when we switch to mina
+ 		new ServerHeartBeatThread().start();
+ 	}
+@@ -663,7 +667,7 @@
+ 
+ 	public static String getVersion() {
+ 		if (version == null) {
+-			version = "DEVELOPMENT";
++			version = "1.3.b89.Plugin_Support.R5";
+ 			try {
+ 				if (MapTool.class.getClassLoader().getResource(VERSION_TXT) != null) {
+ 					version = new String(FileUtil.loadResource(VERSION_TXT));
+@@ -1409,6 +1413,9 @@
+ 		getAutoSaveManager().restart();
+ 
+ 		taskbarFlasher = new TaskBarFlasher(clientFrame);
++
++		// Process plugin related code
++		processPlugins();
+ 	}
+ 
+ 	/**
+@@ -1446,7 +1453,120 @@
+ 			return getServerPolicy().getUseToolTipsForDefaultRollFormat();
+ 		}
+ 	}
++	
++	public static void processPlugins() {
++		
++		// Generate Identity File For Plugins
++		try
++		{
++			FileUtils.writeStringToFile(new File(AppUtil.getAppHome("").toString()+"/tmp/Plugin.Var.Identity"),MapTool.getPlayer().getName());
++		}
++		catch(Exception e)
++		{
++			System.out.println("Error Setting Player Identity");
++		}
++		
++		// Enumerate Plugins
++				
++		int pluginsCount = 0;
++		
++		String classDir = new File("").getAbsolutePath();
+ 
++		File folder = new File(classDir+"/plugins/");
++		
++		String fileContent = "";
++		
++		pluginsAvailable = "";
++	
++		try
++		{
++			File[] listOfFiles = folder.listFiles();
++
++			for (File file : listOfFiles)
++			{
++				if (file.isFile())
++				{
++					// The class name is the same as the class file (as is typical for Java)
++					if(file.getName().indexOf("$")<=-1)
++					{
++						fileContent = "";
++						for(String line: FileUtils.readLines(file))
++						{
++							fileContent = fileContent + line+"\n";
++						}
++						if(fileContent.indexOf("MessagePanelHandler")>0)
++						{
++							if(file.getName().indexOf(".jar")>0)
++							{
++								// Jar File
++								pluginsAvailable = pluginsAvailable + file.getName()+"*, ";
++							}
++							else
++							{
++								// Class File
++								pluginsAvailable = pluginsAvailable + file.getName().substring(0,file.getName().length()-6)+"*, ";
++							}
++						}
++						else
++						{
++							if(file.getName().indexOf(".jar")>0)
++							{
++								// Jar File
++								pluginsAvailable = pluginsAvailable + file.getName()+", ";
++							}
++							else
++							{
++								// Class File
++								pluginsAvailable = pluginsAvailable + file.getName().substring(0,file.getName().length()-6)+", ";
++							}
++						}
++						pluginsCount++;
++					}
++				}
++			}
++			pluginsAvailable = pluginsAvailable.substring(0,pluginsAvailable.length()-1);
++		}
++		catch(Exception x)
++		{
++			// No Plugins
++		}
++		if(pluginsAvailable=="")
++		{
++			MapTool.addLocalMessage("Plugin Support: MapTool doesn't have any plugins <font color=blue>available</font>");
++		}
++		else if(pluginsCount==1)
++		{
++			MapTool.addLocalMessage("Plugin Support: MapTool has <font color=blue>1</font> plugin <font color=blue>available</font> - "+pluginsAvailable.substring(0,pluginsAvailable.length()-2)+".");
++		}
++		else
++		{
++			MapTool.addLocalMessage("Plugin Support: MapTool has <font color=blue>"+pluginsCount+"</font> plugins <font color=blue>available</font> - "+pluginsAvailable.substring(0,pluginsAvailable.length()-2)+".");
++		}
++		
++		// Get Active Plugins
++		try
++		{
++			List<String> lines = FileUtils.readLines(new File(AppUtil.getAppHome("config").toString()+"/Plugins.List"));
++			pluginsList = lines.get(0);
++		}
++		catch(Exception e)
++		{
++			pluginsList = "";
++		}
++		if(pluginsList=="")
++		{
++			MapTool.addLocalMessage("Plugin Support: <font color=red>Note:</font> MapTool doesn't have any plugins <font color=red>active</font>");
++		}
++		else if(pluginsList.indexOf(",")<0)
++		{
++			MapTool.addLocalMessage("Plugin Support: <font color=red>Warning!</font> MapTool has <font color=red>1</font> plugin <font color=red>active</font> - "+pluginsList+".");
++		}
++		else
++		{
++			MapTool.addLocalMessage("Plugin Support: <font color=red>Warning!</font> MapTool has <font color=red>"+(pluginsList.split(",",-1).length)+"</font> plugins <font color=red>active</font> - "+pluginsList+".");
++		}
++	}
++	
+ 	private static class ServerHeartBeatThread extends Thread {
+ 		@Override
+ 		public void run() {
+@@ -1468,5 +1588,4 @@
+ 			}
+ 		}
+ 	}
+-
+ }
+Index: C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/MapToolLineParser.java
+===================================================================
+--- C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/MapToolLineParser.java	(revision 5987)
++++ C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/MapToolLineParser.java	(working copy)
+@@ -76,6 +76,7 @@
+ import net.rptools.maptool.client.functions.TokenVisibleFunction;
+ import net.rptools.maptool.client.functions.UserDefinedMacroFunctions;
+ import net.rptools.maptool.client.functions.VBL_Functions;
++import net.rptools.maptool.client.functions.PluginFunctions;
+ import net.rptools.maptool.client.functions.getInfoFunction;
+ import net.rptools.maptool.client.functions.isVisibleFunction;
+ import net.rptools.maptool.client.ui.htmlframe.HTMLFrameFactory;
+@@ -111,7 +112,7 @@
+ 			TokenInitHoldFunction.getInstance(), TokenLabelFunction.getInstance(), TokenLightFunctions.getInstance(), TokenLocationFunctions.getInstance(), TokenNameFunction.getInstance(),
+ 			TokenNoteFunctions.getInstance(), TokenPropertyFunctions.getInstance(), TokenRemoveFromInitiativeFunction.getInstance(), TokenSelectionFunctions.getInstance(),
+ 			TokenSightFunctions.getInstance(), TokenSpeechFunctions.getInstance(), TokenStateFunction.getInstance(), TokenVisibleFunction.getInstance(), UserDefinedMacroFunctions.getInstance(),
+-			isVisibleFunction.getInstance(), getInfoFunction.getInstance(), TokenMoveFunctions.getInstance(), FogOfWarFunctions.getInstance(), VBL_Functions.getInstance() };
++			isVisibleFunction.getInstance(), getInfoFunction.getInstance(), TokenMoveFunctions.getInstance(), FogOfWarFunctions.getInstance(), VBL_Functions.getInstance(), PluginFunctions.getInstance() };
+ 
+ 	/** Name and Source or macros that come from chat. */
+ 	public static final String CHAT_INPUT = "chat";
+Index: C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/ui/commandpanel/MessagePanel.java
+===================================================================
+--- C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/ui/commandpanel/MessagePanel.java	(revision 5987)
++++ C:/Users/Ondrej/Eclipse Workspace/maptool/src/net/rptools/maptool/client/ui/commandpanel/MessagePanel.java	(working copy)
+@@ -19,7 +19,11 @@
+ import java.awt.event.ComponentListener;
+ import java.awt.event.MouseEvent;
+ import java.awt.event.MouseMotionAdapter;
++import java.io.File;
+ import java.io.IOException;
++import java.lang.reflect.Method;
++import java.net.URL;
++import java.net.URLClassLoader;
+ import java.util.Arrays;
+ import java.util.HashSet;
+ import java.util.regex.Matcher;
+@@ -37,6 +41,7 @@
+ import javax.swing.text.html.StyleSheet;
+ 
+ import net.rptools.maptool.client.AppPreferences;
++import net.rptools.maptool.client.AppUtil;
+ import net.rptools.maptool.client.MapTool;
+ import net.rptools.maptool.client.functions.MacroLinkFunction;
+ import net.rptools.maptool.client.swing.MessagePanelEditorKit;
+@@ -208,34 +213,72 @@
+ 					}
+ 					m.appendTail(text);
+ 					output = text.toString();
++					output = runThroughExternalHandlers(output);
++					String checkReprocess = output;
++					try
++					{
++						if(!checkReprocess.substring(0,2).equals("/:"))
++						{
++							checkReprocess = checkReprocess.substring(checkReprocess.indexOf(": </td><td valign=top><span")+27);
++							checkReprocess = checkReprocess.substring(checkReprocess.indexOf(">")+2);
++							checkReprocess = checkReprocess.substring(0,checkReprocess.indexOf("</span></td></tr></table>")-1);
++						}
++					}
++					catch(Exception x)
++					{
++						checkReprocess = output;
++					}
++					try
++					{
++						if(checkReprocess.substring(0,2).equals("/:"))
++						{
++							checkReprocess = checkReprocess.substring(2);
++							String[] MsgParts = {};
++							MsgParts = checkReprocess.split("\r");
++							for(String MsgPart : MsgParts)
++							{
++								System.out.println("Resubmitting '"+MsgPart+"'");
++								MapTool.getFrame().getCommandPanel().getCommandTextArea().setText(MsgPart);
++								MapTool.getFrame().getCommandPanel().commitCommand();
++							}
++							output="";
++						}
++					}
++					catch(Exception x)
++					{
++						// Use unaltered output
++					}
+ 				}
+-				// Auto inline expansion for {HTTP|HTTPS} URLs
+-//				output = output.replaceAll("(^|\\s|>|\002)(https?://[\\w.%-/~?&+#=]+)", "$1<a href='$2'>$2</a>");
+-				output = output.replaceAll("(^|\\s|>|\002)(https?://[^<>\002\003]+)", "$1<a href='$2'>$2</a>");
++				if(!output.equals(""))
++				{
++					// Auto inline expansion for {HTTP|HTTPS} URLs
++//					output = output.replaceAll("(^|\\s|>|\002)(https?://[\\w.%-/~?&+#=]+)", "$1<a href='$2'>$2</a>");
++					output = output.replaceAll("(^|\\s|>|\002)(https?://[^<>\002\003]+)", "$1<a href='$2'>$2</a>");
+ 
+-				if (!message.getSource().equals(MapTool.getPlayer().getName())) {
+-					// TODO change this so 'macro' is case-insensitive
+-					Matcher m = Pattern.compile("href=([\"'])\\s*(macro://(?:[^/]*)/(?:[^?]*)(?:\\?(?:.*?))?)\\1\\s*", Pattern.CASE_INSENSITIVE).matcher(output);
+-					while (m.find()) {
+-						MacroLinkFunction.getInstance().processMacroLink(m.group(2));
++					if (!message.getSource().equals(MapTool.getPlayer().getName())) {
++						// TODO change this so 'macro' is case-insensitive
++						Matcher m = Pattern.compile("href=([\"'])\\s*(macro://(?:[^/]*)/(?:[^?]*)(?:\\?(?:.*?))?)\\1\\s*", Pattern.CASE_INSENSITIVE).matcher(output);
++						while (m.find()) {
++							MacroLinkFunction.getInstance().processMacroLink(m.group(2));
++						}
+ 					}
+-				}
+-				// if rolls not being visible to this user result in an empty message, display nothing
+-				// TODO The leading and trailing '.*' are probably not needed -- test this before removing them
+-				if (!output.matches(".*\002\\s*\003.*")) {
+-					output = output.replaceAll("\002|\003", "");
++					// if rolls not being visible to this user result in an empty message, display nothing
++					// TODO The leading and trailing '.*' are probably not needed -- test this before removing them
++					if (!output.matches(".*\002\\s*\003.*")) {
++						output = output.replaceAll("\002|\003", "");
+ 
+-					try {
+-						Element element = document.getElement("body");
+-						document.insertBeforeEnd(element, "<div>" + output + "</div>");
++						try {
++							Element element = document.getElement("body");
++							document.insertBeforeEnd(element, "<div>" + output + "</div>");
+ 
+-						if (!message.getSource().equals(MapTool.getPlayer().getName())) {
+-							MapTool.playSound(SND_MESSAGE_RECEIVED);
++							if (!message.getSource().equals(MapTool.getPlayer().getName())) {
++								MapTool.playSound(SND_MESSAGE_RECEIVED);
++							}
++						} catch (IOException ioe) {
++							ioe.printStackTrace();
++						} catch (BadLocationException ble) {
++							ble.printStackTrace();
+ 						}
+-					} catch (IOException ioe) {
+-						ioe.printStackTrace();
+-					} catch (BadLocationException ble) {
+-						ble.printStackTrace();
+ 					}
+ 				}
+ 			}
+@@ -241,4 +284,57 @@
+ 			}
+ 		});
+ 	}
++		
++	public String runThroughExternalHandlers(String MessagePanelText)
++	{
++		String[] plugins = MapTool.pluginsList.split(","); 
++		String classDir = new File("").getAbsolutePath();		
++		try
++		{
++			for (String plugin : plugins)
++			{
++				plugin = plugin.trim();
++				String methodName= "MessagePanelHandler";							
++				try
++				{
++					URL classURL;
++					if(plugin.indexOf(".jar")<0)
++					{
++						// Determine the URL of the desired class file
++						classURL = new URL("file:///"+classDir+"/plugins/");
++					}
++					else
++					{
++						// Determine the URL of the desired JAR file
++						classURL = new URL("file:///"+classDir+"/plugins/"+plugin);
++						plugin = plugin.replace(".jar","");
++					}
++					// Load the contents of the class file
++					URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { classURL });   
++					// Obtain a reference to the class embedded in the class file
++					Class loadedClass = classLoader.loadClass(plugin);
++					// Obtain a reference to the desired method of the class in the class file
++					Class paramTypes[] = new Class[] { String.class , String.class }; 
++					Method providedMethod = loadedClass.getDeclaredMethod("MessagePanelHandler", paramTypes);
++					// Invoke the method
++					Object output = providedMethod.invoke(null, MessagePanelText, AppUtil.getAppHome("").toString());
++					System.out.println("Invoked 'MessagePanelHandler' in plugin '"+plugin+"' (Located in = '"+ classURL.toString()+"', Config='"+AppUtil.getAppHome("").toString()+"')");
++					MessagePanelText = (String)output; 
++				}
++				catch(Exception e)
++				{
++					// System.out.println(jarFileName+" has no MessagePanelHandler (Exception: "+e.getMessage()+")");
++				}
++				catch(Error e)
++				{
++					// System.out.println(jarFileName+" has no MessagePanelHandler (Error: "+e.getMessage()+")");
++				}
++			}
++		}
++		catch(Exception xx)
++		{
++			// Plugin Directory Not Installed Or No Plugins Installed
++		}
++		return MessagePanelText;
++	}
+ }
